@@ -1,6 +1,6 @@
 <?php
 /*
-    Copyright 2011 p12
+    Copyright 2011 p12 <tir5c3@yahoo.co.uk>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -56,13 +56,13 @@ class SimpleSearch extends SearchEngine {
     }
     
     //Near match not supported
-       public static function getNearMatch( $searchterm ) 
+    public static function getNearMatch( $searchterm ) 
     {
         return null;
     }
 
     //Prefixes not supported
-       function replacePrefixes( $query )
+    function replacePrefixes( $query )
     {
         return $query;
     }
@@ -96,40 +96,33 @@ class SimpleSearch extends SearchEngine {
  */
 class SimpleSearchResultSet extends SearchResultSet {    
 
-    static function new_from_query( $query, $limit = 20, $offset = 0 ) 
+    /**
+        Returns parsed keyword data.
+    */
+    static function get_data()
     {
-        //check the cache for optimized keyword list
-        global $wgSimpleSearchQueryWordLimit;
-        global $wgSimpleSearchMaxResultCost;
-        global $wgSimpleSearchMaxResults;
-        global $wgSimpleSearchSplitWordCost;
-        global $wgSimpleSearchInsertCost;
-        global $wgSimpleSearchDeleteCost;
-        global $wgSimpleSearchReplaceCost;
+        $data = false;
 
-        $data = array();
-
-        /* unfortunately APC is unavailable
-        
+        $cache = wfGetMainCache();
+        $T_DATA = 'SimpleSearch_data';
+        $T_TIME = 'SimpleSearch_time';
+                
+        //Fetch data from cache. Do so only if the cache is newer than this file
         $mod_time = gmdate('YmdHis', filemtime());
-        $cache_time = 0;
-        if (apc_exists('key2url_time') && apc_exists('key2url_data')) {
-            $cache_time = apc_fetch('key2url_time');
+        
+        $cache_time = $cache->get($T_TIME);
+        
+        if ($cache_time && $cache_time >= $mod_time) {
+            $data = $cache->get($T_DATA);
         }
-
         
-        $cache_success = false;
-        if ($mod_time <= $cache_time) {
-            //load from cache
-            $data = apc_fetch('key2url_data', $cache_success);
-        } 
-        
-        if (!$cache_success) {
+        if ($data == false) {
             //drop existing cache
-            apc_delete('key2url_time');
-            apc_delete('key2url_data');
-            */
+            $cache->delete($T_DATA);
+            $cache->delete($T_TIME);
+            
             //read the keyword string
+            $data = array();
             $id = 0;
             $string = wfMsgGetKey('simple-search-list', true, false, false);
             
@@ -167,16 +160,26 @@ class SimpleSearchResultSet extends SearchResultSet {
                 }
             }
             $data['NUM_ID'] = $id;
-            
-            /* unfortunately APC is not available
-             
+                         
             //update cache
-            
             $curr_time = gmdate('YmdHis', time());
-            apc_store('key2url_data', $data, 7200);
-            apc_store('key2url_time', $curr_time, 7200);
-            
-        }*/
+            $cache->set($T_DATA, $data, 7200);
+            $cache->set($T_TIME, $curr_time, 7200);
+        }
+    }
+    
+    static function new_from_query( $query, $limit = 20, $offset = 0 ) 
+    {
+        //check the cache for optimized keyword list
+        global $wgSimpleSearchQueryWordLimit;
+        global $wgSimpleSearchMaxResultCost;
+        global $wgSimpleSearchMaxResults;
+        global $wgSimpleSearchSplitWordCost;
+        global $wgSimpleSearchInsertCost;
+        global $wgSimpleSearchDeleteCost;
+        global $wgSimpleSearchReplaceCost;
+
+        $data = self::get_data();
         
         //split the query into words
         $query = trim($query);
