@@ -58,7 +58,11 @@ class SimpleSearch extends SearchEngine {
     //Near match not supported
     public static function getNearMatch( $searchterm ) 
     {
-        return null;
+        $results = SimpleSearchResultSet::new_from_query($searchterm, $this->limit, $this->offset);
+        if (!$results->hasResults()) {
+            return null;   
+        }
+        return $results->next()->getTitle();
     }
 
     //Prefixes not supported
@@ -108,7 +112,7 @@ class SimpleSearchResultSet extends SearchResultSet {
         $T_TIME = 'SimpleSearch_time';
                 
         //Fetch data from cache. Do so only if the cache is newer than this file
-        $mod_time = gmdate('YmdHis', filemtime());
+        $mod_time = gmdate('YmdHis', filemtime(__FILE__));
         
         $cache_time = $cache->get($T_TIME);
         
@@ -139,8 +143,8 @@ class SimpleSearchResultSet extends SearchResultSet {
                     $data['KEYS'][$id] = $key;
                     $data['URLS'][$id] = $url;
                     
-                    //split by ::. Map all resulting words to the source keywords
-                    $key_words = explode('::', $key);
+                    //split by :: and parentheses ( []()<> ). Map all resulting words to the source keywords
+                    $key_words = preg_split('/[\(\)\<\>]|::/', $key);
                     $key_words = array_map('trim', $key_words);
                     foreach ($key_words as $w) {
                         if ($w == '') continue;
@@ -166,6 +170,7 @@ class SimpleSearchResultSet extends SearchResultSet {
             $cache->set($T_DATA, $data, 7200);
             $cache->set($T_TIME, $curr_time, 7200);
         }
+        return $data;
     }
     
     static function new_from_query( $query, $limit = 20, $offset = 0 ) 
