@@ -41,6 +41,7 @@ $wgSimpleSearchInsertCost = 3;
 $wgSimpleSearchDeleteCost = 3;
 $wgSimpleSearchReplaceCost = 2;
 $wgSimpleSearchQueryWordLimit = 5;
+$wgSimpleSearchCacheExpiry = 7200;
 
 class SimpleSearch extends SearchEngine {
 
@@ -154,9 +155,11 @@ class SimpleSearchResultSet extends SearchResultSet {
             $data['NUM_ID'] = $id;
 
             //update cache
+            global $wgSimpleSearchCacheExpiry;
+
             $curr_time = gmdate('YmdHis', time());
-            $cache->set($T_DATA, $data, 7200);
-            $cache->set($T_TIME, $curr_time, 7200);
+            $cache->set($T_DATA, $data, $wgSimpleSearchCacheExpiry);
+            $cache->set($T_TIME, $curr_time, $wgSimpleSearchCacheExpiry);
         }
         return $data;
     }
