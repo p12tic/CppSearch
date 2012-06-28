@@ -89,8 +89,35 @@ class SimpleSearch extends SearchEngine {
  */
 class SimpleSearchResultSet extends SearchResultSet {
 
+    // matches an operator. Note that e.g. = cannot come before ==, otherwise
+    // the latter will never be matched
+    static $operator_pattern = '/(operator\s*(?:\(\)|<=|<<=|<<|<|>=|>>=|>>|>|==|=|\!=|\!|\[\]|->\*|->|\+\+|\+=|\+|--|-=|-|~=|~|\*=|\*|&=|&|^=|^|\/=|\/|%=|%|\|\||\|))/';
+
     /**
         Returns parsed keyword data.
+
+        The format of parsed data:
+
+        'URLS' : map ( id -> url )
+
+            Maps the id of each entry to URL representing that entry
+
+        'KEYS' : map ( id -> full key )
+
+            Maps the id of each entry to full key name representing that entry
+
+        'WORDS' : map ( word -> array of ids )
+
+            Maps words to a list of entries containing entries that match the word
+
+        'WORDS_SPLIT' : map ( word -> array of ids )
+
+            Maps words to a list of entries containing entries that match the
+            word if '_' is also considered a word separator.
+
+        'NUM_ID' : int
+
+            The number of entries
     */
     static function get_data()
     {
@@ -132,16 +159,33 @@ class SimpleSearchResultSet extends SearchResultSet {
                     $data['KEYS'][$id] = $key;
                     $data['URLS'][$id] = $url;
 
-                    //split by :: and parentheses ( []()<> ). Map all resulting words to the source keywords
-                    $key_words = preg_split('/[\(\)\<\>]|::/', $key);
-                    $key_words = array_map('trim', $key_words);
+                    //split the keywords
+
+                    $key_words = array();
+                    $key = strtolower($key);
+
+                    //deal with various operators first
+                    if (preg_match(self::$operator_pattern, $key, $oper) > 0) {
+                        //remove spaces
+                        $oper = preg_replace('/ */','',$oper);
+                        $key_words[] = $oper;
+                        $key = preg_replace(self::$operator_pattern, ' ', $key);
+                    }
+
+                    //split by non-alphanumeric characters
+                    $key = preg_replace('/[^a-z0-9\_]/', ' ', $key);
+                    $key = preg_replace('/ +/', ' ', $key);
+                    $key = trim($key);
+
+                    $key_words = preg_split('/ /', $key);
+
+                    //Map all resulting words to the source entries
                     foreach ($key_words as $w) {
                         if ($w == '') continue;
                         $data['WORDS'][$w][] = $id;
 
                         //try to split the words by _. Map if the split was successful
                         $w_words = explode('_', $w);
-                        $w_words = array_map('trim', $w_words);
                         if (count($w_words) > 1) {
                             foreach ($w_words as $ww) {
                                 if ($ww == '') continue;
