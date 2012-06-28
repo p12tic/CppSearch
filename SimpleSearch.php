@@ -197,7 +197,7 @@ class SimpleSearchResultSet extends SearchResultSet {
         //create and zero the cost table
         $key_cost = array();
         $key_cost_curr = array();
-        for($id = 0; $id < $data['NUM_ID']; $id++) {
+        for ($id = 0; $id < $data['NUM_ID']; $id++) {
             $key_cost[$id] = 0;
         }
         
@@ -208,7 +208,7 @@ class SimpleSearchResultSet extends SearchResultSet {
             $qw = trim($qw);
             
             //zero the keyword cost table for the current word
-            for($id = 0; $id < $data['NUM_ID']; $id++) {
+            for ($id = 0; $id < $data['NUM_ID']; $id++) {
                 $key_cost_curr[$id] = $wgSimpleSearchMaxResultCost*2;
             }
             
@@ -222,7 +222,6 @@ class SimpleSearchResultSet extends SearchResultSet {
                 }
             }
             
-            
             //compute the costs for each split keyword 
             foreach ($data['WORDS_SPLIT'] as $w => $id_array) {
                 $cost = levenshtein($qw, $w, $wgSimpleSearchInsertCost,
@@ -234,7 +233,7 @@ class SimpleSearchResultSet extends SearchResultSet {
             }
             
             //update the total cost table
-            for($id = 0; $id < $data['NUM_ID']; $id++) {
+            for ($id = 0; $id < $data['NUM_ID']; $id++) {
                 $key_cost[$id] += $key_cost_curr[$id];
             }
             
