@@ -58,25 +58,13 @@ class SimpleSearch extends SearchEngine {
     //Near match not supported
     public static function getNearMatch( $searchterm ) 
     {
-        $results = SimpleSearchResultSet::new_from_query($searchterm, $this->limit, $this->offset);
-        if (!$results->hasResults()) {
-            return null;   
-        }
-        return $results->next()->getTitle();
+        return null;
     }
 
     //Prefixes not supported
     function replacePrefixes( $query )
     {
         return $query;
-    }
-    
-    //Namespaces not supported
-    public static function searchableNamespaces() 
-    {
-        global $wgContLang;
-        $all = $wgContLang->getNamespaces();
-        return array(NS_MAIN => $all[NS_MAIN]);
     }
     
     //User namespaces not supported
