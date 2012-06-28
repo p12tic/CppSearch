@@ -69,7 +69,7 @@ class SimpleSearch extends SearchEngine {
     }
 
     //User namespaces not supported
-    public static function userNamespaces( &$user )
+    public static function userNamespaces( $user )
     {
         return array();
     }
