@@ -22,32 +22,32 @@
 
 $wgExtensionCredits['other'][] = array(
     'path'           => __FILE__,
-    'name'           => 'SimpleSearch',
+    'name'           => 'CppSearch',
     'author'         => 'p12',
-    'descriptionmsg' => 'Simple keyword search extension',
+    'descriptionmsg' => 'C/C++ keyword search extension',
 //  'url'            => '',
 );
 
 
-$wgAutoloadClasses['SimpleSearch'] = __FILE__;
-$wgAutoloadClasses['SimpleResult'] = __FILE__;
-$wgAutoloadClasses['SimpleSearchResultSet'] = __FILE__;
+$wgAutoloadClasses['CppSearch'] = __FILE__;
+$wgAutoloadClasses['CppResult'] = __FILE__;
+$wgAutoloadClasses['CppSearchResultSet'] = __FILE__;
 
 //Default settings
-$wgSimpleSearchMaxResults = 100;
-$wgSimpleSearchMaxResultCost = 4;
-$wgSimpleSearchSplitWordCost = 2;
-$wgSimpleSearchInsertCost = 3;
-$wgSimpleSearchDeleteCost = 3;
-$wgSimpleSearchReplaceCost = 2;
-$wgSimpleSearchQueryWordLimit = 5;
-$wgSimpleSearchCacheExpiry = 7200;
+$wgCppSearchMaxResults = 100;
+$wgCppSearchMaxResultCost = 4;
+$wgCppSearchSplitWordCost = 2;
+$wgCppSearchInsertCost = 3;
+$wgCppSearchDeleteCost = 3;
+$wgCppSearchReplaceCost = 2;
+$wgCppSearchQueryWordLimit = 5;
+$wgCppSearchCacheExpiry = 7200;
 
-class SimpleSearch extends SearchEngine {
+class CppSearch extends SearchEngine {
 
     function searchText( $term )
     {
-        return SimpleSearchResultSet::new_from_query($term, $this->limit, $this->offset);
+        return CppSearchResultSet::new_from_query($term, $this->limit, $this->offset);
     }
 
     //Title search not supported
@@ -87,7 +87,7 @@ class SimpleSearch extends SearchEngine {
 /**
  * @ingroup Search
  */
-class SimpleSearchResultSet extends SearchResultSet {
+class CppSearchResultSet extends SearchResultSet {
 
     /**
         Splits a query into keywords that will be used in search
@@ -159,8 +159,8 @@ class SimpleSearchResultSet extends SearchResultSet {
         $data = false;
 
         $cache = wfGetMainCache();
-        $T_DATA = 'SimpleSearch_data';
-        $T_TIME = 'SimpleSearch_time';
+        $T_DATA = 'CppSearch_data';
+        $T_TIME = 'CppSearch_time';
 
         //Fetch data from cache. Do so only if the cache is newer than this file
         $mod_time = gmdate('YmdHis', filemtime(__FILE__));
@@ -218,11 +218,11 @@ class SimpleSearchResultSet extends SearchResultSet {
             $data['NUM_ID'] = $id;
 
             //update cache
-            global $wgSimpleSearchCacheExpiry;
+            global $wgCppSearchCacheExpiry;
 
             $curr_time = gmdate('YmdHis', time());
-            $cache->set($T_DATA, $data, $wgSimpleSearchCacheExpiry);
-            $cache->set($T_TIME, $curr_time, $wgSimpleSearchCacheExpiry);
+            $cache->set($T_DATA, $data, $wgCppSearchCacheExpiry);
+            $cache->set($T_TIME, $curr_time, $wgCppSearchCacheExpiry);
         }
         return $data;
     }
@@ -230,13 +230,13 @@ class SimpleSearchResultSet extends SearchResultSet {
     static function new_from_query( $query, $limit = 20, $offset = 0 )
     {
         //check the cache for optimized keyword list
-        global $wgSimpleSearchQueryWordLimit;
-        global $wgSimpleSearchMaxResultCost;
-        global $wgSimpleSearchMaxResults;
-        global $wgSimpleSearchSplitWordCost;
-        global $wgSimpleSearchInsertCost;
-        global $wgSimpleSearchDeleteCost;
-        global $wgSimpleSearchReplaceCost;
+        global $wgCppSearchQueryWordLimit;
+        global $wgCppSearchMaxResultCost;
+        global $wgCppSearchMaxResults;
+        global $wgCppSearchSplitWordCost;
+        global $wgCppSearchInsertCost;
+        global $wgCppSearchDeleteCost;
+        global $wgCppSearchReplaceCost;
 
         $data = self::get_data();
 
@@ -245,13 +245,13 @@ class SimpleSearchResultSet extends SearchResultSet {
         self::split_words($query, $qwords, $dummy);
 
         //limit the number of words
-        while (count($qwords) > $wgSimpleSearchQueryWordLimit) {
+        while (count($qwords) > $wgCppSearchQueryWordLimit) {
             array_pop($qwords);
         }
 
         // short circuit if the query is empty
         if (count($qwords) == 0) {
-            $result_set = new SimpleSearchResultSet($query, array());
+            $result_set = new CppSearchResultSet($query, array());
             return $result_set;
         }
 
@@ -280,10 +280,10 @@ class SimpleSearchResultSet extends SearchResultSet {
             }
 
             foreach ($data['WORDS'] as $w => &$id_array) {
-                $cost = levenshtein($qw, $w, $wgSimpleSearchInsertCost,
-                                    $wgSimpleSearchDeleteCost,
-                                    $wgSimpleSearchReplaceCost);
-                if ($cost <= $wgSimpleSearchMaxResultCost) {
+                $cost = levenshtein($qw, $w, $wgCppSearchInsertCost,
+                                    $wgCppSearchDeleteCost,
+                                    $wgCppSearchReplaceCost);
+                if ($cost <= $wgCppSearchMaxResultCost) {
                     $mt = array();
                     $mt['WORD'] = $w;
                     $mt['COST'] = $cost;
@@ -293,11 +293,11 @@ class SimpleSearchResultSet extends SearchResultSet {
             }
 
             foreach ($data['WORDS_SPLIT'] as $w => &$id_array) {
-                $cost = levenshtein($qw, $w, $wgSimpleSearchInsertCost,
-                                    $wgSimpleSearchDeleteCost,
-                                    $wgSimpleSearchReplaceCost);
-                $cost += $wgSimpleSearchSplitWordCost;
-                if ($cost <= $wgSimpleSearchMaxResultCost) {
+                $cost = levenshtein($qw, $w, $wgCppSearchInsertCost,
+                                    $wgCppSearchDeleteCost,
+                                    $wgCppSearchReplaceCost);
+                $cost += $wgCppSearchSplitWordCost;
+                if ($cost <= $wgCppSearchMaxResultCost) {
                     $mt = array();
                     $mt['WORD'] = $w;
                     $mt['COST'] = $cost;
@@ -309,7 +309,7 @@ class SimpleSearchResultSet extends SearchResultSet {
 
             if (count($matched_words) == 0) {
                 //no results for a word in query => no match
-                $result_set = new SimpleSearchResultSet($query, array());
+                $result_set = new CppSearchResultSet($query, array());
                 return $result_set;
             }
 
@@ -379,7 +379,7 @@ class SimpleSearchResultSet extends SearchResultSet {
             foreach ($intersected_eids as $eid) {
                 $cost = $eid_map[$eid] + $curr_eid_map[$eid];
                 //only add if the cost is acceptable
-                if ($cost <= $wgSimpleSearchMaxResultCost) {
+                if ($cost <= $wgCppSearchMaxResultCost) {
                     $new_eid_map[$eid] = $cost;
                 }
             }
@@ -391,7 +391,7 @@ class SimpleSearchResultSet extends SearchResultSet {
         asort($eid_map);
 
         // Strip extra results
-        $eid_map = array_slice($eid_map, 0, $wgSimpleSearchMaxResults*3, true);
+        $eid_map = array_slice($eid_map, 0, $wgCppSearchMaxResults*3, true);
 
         // Pull additional information
         $res = array();
@@ -430,15 +430,15 @@ class SimpleSearchResultSet extends SearchResultSet {
         }
 
         // Strip extra results
-        $res = array_slice($res, 0, $wgSimpleSearchMaxResults);
+        $res = array_slice($res, 0, $wgCppSearchMaxResults);
 
-        $result_set = new SimpleSearchResultSet($query, $res);
+        $result_set = new CppSearchResultSet($query, $res);
         return $result_set;
     }
 
     ///Private constructor
 
-    function SimpleSearchResultSet($query, $res)
+    function CppSearchResultSet($query, $res)
     {
         $this->query_ = $query;
         $this->res_ = $res;
@@ -455,7 +455,7 @@ class SimpleSearchResultSet extends SearchResultSet {
         return count($this->res_) > 0;
     }
 
-    //Returns next SimpleSearchResult
+    //Returns next CppSearchResult
     function next()
     {
         if ($this->pos_ >= count($this->res_)) return false;
@@ -463,13 +463,13 @@ class SimpleSearchResultSet extends SearchResultSet {
         $key = $this->res_[$this->pos_]['KEY'];
         $url = $this->res_[$this->pos_]['URL'];
         $this->pos_++;
-        return new SimpleSearchResult($key, $url);
+        return new CppSearchResult($key, $url);
     }
 }
 
-class SimpleSearchResult extends SearchResult {
+class CppSearchResult extends SearchResult {
 
-    function SimpleSearchResult($key, $url)
+    function CppSearchResult($key, $url)
     {
         //$this->mTitle = Title::newFromText($url);
         $this->mTitle = Title::makeTitle(NS_MAIN, $url);
