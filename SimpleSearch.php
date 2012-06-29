@@ -249,73 +249,163 @@ class SimpleSearchResultSet extends SearchResultSet {
             array_pop($qwords);
         }
 
-        //create and zero the cost table
-        $key_cost = array();
-        $key_cost_curr = array();
-        for ($id = 0; $id < $data['NUM_ID']; $id++) {
-            $key_cost[$id] = 0;
+        // short circuit if the query is empty
+        if (count($qwords) == 0) {
+            $result_set = new SimpleSearchResultSet($query, array());
+            return $result_set;
         }
 
-        //add costs to the keywords not similar to the words compared
-        $qi = 0;
-        foreach ($qwords as $qw) {
-            if ($qw == '') continue;
-            $qw = trim($qw);
+        /*  Find all words that match each of the word of the query (qword). Put
+            all such words, matching costs and corresponding entries into an
+            array
 
-            //zero the keyword cost table for the current word
-            for ($id = 0; $id < $data['NUM_ID']; $id++) {
-                $key_cost_curr[$id] = $wgSimpleSearchMaxResultCost*2;
+            array [
+                {qword} => array [
+                    'WORD' => matched word
+                    'COST' => cost
+                    'IDS' => reference to an array of ids of entries containing
+                             this word
+                ]
+            ]
+        */
+
+        $matches = array();
+
+        foreach ($qwords as $qw) {
+            $matched_words = array();
+
+            if (isset($matches[$qw])) {
+                //already processed
+                continue;
             }
 
-            //compute the costs for each complete keyword
-            foreach ($data['WORDS'] as $w => $id_array) {
+            foreach ($data['WORDS'] as $w => &$id_array) {
                 $cost = levenshtein($qw, $w, $wgSimpleSearchInsertCost,
                                     $wgSimpleSearchDeleteCost,
                                     $wgSimpleSearchReplaceCost);
-                foreach ($id_array as $id) {
-                    $key_cost_curr[$id] = min($key_cost_curr[$id], $cost);
+                if ($cost <= $wgSimpleSearchMaxResultCost) {
+                    $mt = array();
+                    $mt['WORD'] = $w;
+                    $mt['COST'] = $cost;
+                    $mt['IDS'] = &$id_array;
+                    $matched_words[] = $mt;
                 }
             }
 
-            //compute the costs for each split keyword
-            foreach ($data['WORDS_SPLIT'] as $w => $id_array) {
+            foreach ($data['WORDS_SPLIT'] as $w => &$id_array) {
                 $cost = levenshtein($qw, $w, $wgSimpleSearchInsertCost,
                                     $wgSimpleSearchDeleteCost,
-                                    $wgSimpleSearchReplaceCost) + $wgSimpleSearchSplitWordCost;
-                foreach ($id_array as $id) {
-                    $key_cost_curr[$id] = min($key_cost_curr[$id], $cost);
+                                    $wgSimpleSearchReplaceCost);
+                $cost += $wgSimpleSearchSplitWordCost;
+                if ($cost <= $wgSimpleSearchMaxResultCost) {
+                    $mt = array();
+                    $mt['WORD'] = $w;
+                    $mt['COST'] = $cost;
+                    $mt['IDS'] = &$id_array;
+                    $matched_words[] = $mt;
                 }
             }
 
-            //update the total cost table
-            for ($id = 0; $id < $data['NUM_ID']; $id++) {
-                $key_cost[$id] += $key_cost_curr[$id];
+
+            if (count($matched_words) == 0) {
+                //no results for a word in query => no match
+                $result_set = new SimpleSearchResultSet($query, array());
+                return $result_set;
             }
 
-            $qi++;
+            $matches[$qw] = $matched_words;
         }
 
-        asort($key_cost);
+        /*  Analyze the entries corresponding to matched words. We want to find
+            a set of entries, for which each qword has at least one matching
+            wond in the entry
+        */
 
+        // sort the match array to start from the words with the lowest number
+        // of entries
+        function cmp_match($lhs, $rhs)
+        {
+            $lnum = 0;
+            foreach($lhs as $w) {
+                $lnum = max($lnum, count($w['IDS']));
+            }
+
+            $rnum = 0;
+            foreach($rhs as $w) {
+                $rnum = max($rnum, count($w['IDS']));
+            }
+
+            return $lnum - $rnum;
+        }
+
+        uasort($matches, 'cmp_match');
+
+        //  Find a set of entry ids that have matches for all qwords
+        // eid = array [ {id of entry} => cost ]
+
+        $eid_map = array();
+        $first_qword = true;
+
+        foreach ($matches as $matched_words) {
+
+            // curr_eid_map - matched eids for the current qword
+            // array [ {id of entry} => cost
+            $curr_eid_map = array();
+
+            foreach ($matched_words as $mt) {
+                foreach ($mt['IDS'] as $eid) {
+                    $cost = $mt['COST'];
+                    if (isset($curr_eid_map[$eid])) {
+                        $cost = min($cost, $curr_eid_map[$eid]);
+                    }
+                    $curr_eid_map[$eid] = $cost;
+                }
+            }
+
+            // Compute intersections of eids only for the second and subsequent
+            // qwords
+            if ($first_qword) {
+                $first_qword = false;
+                $eid_map = $curr_eid_map;
+                continue;
+            }
+
+            // Compute the intersection of previously matched eids and eids that
+            // have been matched for the current qword
+            $intersected_eids = array_intersect(array_keys($eid_map),
+                                                array_keys($curr_eid_map));
+
+            $new_eid_map = array();
+            foreach ($intersected_eids as $eid) {
+                $cost = $eid_map[$eid] + $curr_eid_map[$eid];
+                //only add if the cost is acceptable
+                if ($cost <= $wgSimpleSearchMaxResultCost) {
+                    $new_eid_map[$eid] = $cost;
+                }
+            }
+
+            $eid_map = $new_eid_map;
+        }
+
+        // Sort $eid_map to have the best results at the beginning
+        asort($eid_map);
+
+        // Strip extra results
+        $eid_map = array_slice($eid_map, 0, $wgSimpleSearchMaxResults, true);
+
+        // Pull additional information
         $res = array();
-        $i = 0;
-        //select the best results
-        foreach($key_cost as $id => $cost) {
-            if ($i >= $wgSimpleSearchMaxResults) break;
-            if ($cost > $wgSimpleSearchMaxResultCost) break;
-
+        foreach($eid_map as $eid => $cost) {
             $res[] = array(
                 'COST' => $cost,
-                'ID' => $id,
-                'KEY' => $data['KEYS'][$id],
-                'URL' => $data['URLS'][$id]
+                'ID' => $eid,
+                'KEY' => $data['KEYS'][$eid],
+                'URL' => $data['URLS'][$eid]
                 );
-            $i++;
         }
 
-
-        //sort the best results within each cost bucket
-        //prefer results with lower cost and shorter key
+        // Sort the best results within each cost bucket
+        // Prefer results with lower cost and shorter key
         function cmp_res($lhs, $rhs)
         {
             $res = $lhs['COST'] - $rhs['COST'];
