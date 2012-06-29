@@ -16,10 +16,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-//
-// $res_num - number of results to supply
-// $max_cost_per_word - maximum cost per word to return the results for
-
 $wgExtensionCredits['other'][] = array(
     'path'           => __FILE__,
     'name'           => 'CppSearch',
