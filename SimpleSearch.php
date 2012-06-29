@@ -89,9 +89,44 @@ class SimpleSearch extends SearchEngine {
  */
 class SimpleSearchResultSet extends SearchResultSet {
 
-    // matches an operator. Note that e.g. = cannot come before ==, otherwise
-    // the latter will never be matched
-    static $operator_pattern = '/(operator\s*(?:\(\)|<=|<<=|<<|<|>=|>>=|>>|>|==|=|\!=|\!|\[\]|->\*|->|\+\+|\+=|\+|--|-=|-|~=|~|\*=|\*|&=|&|^=|^|\/=|\/|%=|%|\|\||\|))/';
+    /**
+        Splits a query into keywords that will be used in search
+    */
+    static function split_words($query, &$words, &$split_words)
+    {
+        $operator_pattern = '/(operator\s*(?:\(\)|<=|<<=|<<|<|>=|>>=|>>|>|==|=|\!=|\!|\[\]|->\*|->|\+\+|\+=|\+|--|-=|-|~=|~|\*=|\*|&=|&|^=|^|\/=|\/|%=|%|\|\||\|))/';
+
+        $query = strtolower($query);
+
+        $words = array();
+        $split_words = array();
+
+        //deal with various operators first
+        if (preg_match($operator_pattern, $query, $oper) > 0) {
+            //remove spaces
+            $oper = preg_replace('/ */','',$oper[0]);
+            $words[] = $oper;
+            $query = preg_replace($operator_pattern, ' ', $query);
+        }
+
+        //split by non-alphanumeric characters
+        $query = preg_replace('/[^a-z0-9\_]/', ' ', $query);
+        $query = preg_replace('/ +/', ' ', $query);
+        $query = trim($query);
+
+        $words = array_merge($words, preg_split('/ /', $query));
+
+        foreach ($words as $w) {
+            if ($w == '') continue;
+            $w_words = explode('_', $w);
+            if (count($w_words) > 1) {
+                foreach ($w_words as $ww) {
+                    if ($ww == '') continue;
+                    $split_words[] = $ww;
+                }
+            }
+        }
+    }
 
     /**
         Returns parsed keyword data.
@@ -162,37 +197,21 @@ class SimpleSearchResultSet extends SearchResultSet {
                     //split the keywords
 
                     $key_words = array();
-                    $key = strtolower($key);
+                    $split_words = array();
 
-                    //deal with various operators first
-                    if (preg_match(self::$operator_pattern, $key, $oper) > 0) {
-                        //remove spaces
-                        $oper = preg_replace('/ */','',$oper);
-                        $key_words[] = $oper;
-                        $key = preg_replace(self::$operator_pattern, ' ', $key);
-                    }
-
-                    //split by non-alphanumeric characters
-                    $key = preg_replace('/[^a-z0-9\_]/', ' ', $key);
-                    $key = preg_replace('/ +/', ' ', $key);
-                    $key = trim($key);
-
-                    $key_words = preg_split('/ /', $key);
+                    self::split_words($key, $key_words, $split_words);
 
                     //Map all resulting words to the source entries
                     foreach ($key_words as $w) {
                         if ($w == '') continue;
                         $data['WORDS'][$w][] = $id;
-
-                        //try to split the words by _. Map if the split was successful
-                        $w_words = explode('_', $w);
-                        if (count($w_words) > 1) {
-                            foreach ($w_words as $ww) {
-                                if ($ww == '') continue;
-                                $data['WORDS_SPLIT'][$ww][] = $id;
-                            }
-                        }
                     }
+                    //Map all resulting split words to the source entries
+                    foreach ($split_words as $w) {
+                        if ($w == '') continue;
+                        $data['WORDS_SPLIT'][$w][] = $id;
+                    }
+
                     $id++;
                 }
             }
@@ -222,8 +241,9 @@ class SimpleSearchResultSet extends SearchResultSet {
         $data = self::get_data();
 
         //split the query into words
-        $query = trim($query);
-        $qwords = preg_split('/\s*::\s*|\s+/', $query);
+        $qwords = array();
+        self::split_words($query, $qwords, $dummy);
+
         //limit the number of words
         while (count($qwords) > $wgSimpleSearchQueryWordLimit) {
             array_pop($qwords);
