@@ -42,6 +42,7 @@ $wgCppSearchDeleteCost = 3;
 $wgCppSearchReplaceCost = 2;
 $wgCppSearchQueryWordLimit = 5;
 $wgCppSearchCacheExpiry = 7200;
+$wgCppSearchGroups = array ( 'cpp' );
 
 class CppSearch extends SearchEngine {
 
@@ -154,13 +155,14 @@ class CppSearchResultSet extends SearchResultSet {
 
             The number of entries
     */
-    static function get_data()
+    static function get_data($group)
     {
         $data = false;
 
         $cache = wfGetMainCache();
-        $T_DATA = 'CppSearch_data';
-        $T_TIME = 'CppSearch_time';
+        $T_DATA = 'CppSearch_data_' . $group;
+        $T_TIME = 'CppSearch_time_' . $group;
+        $T_MSG = 'cpp-search-list-' . $group;
 
         //Fetch data from cache. Do so only if the cache is newer than this file
         $mod_time = gmdate('YmdHis', filemtime(__FILE__));
@@ -179,7 +181,7 @@ class CppSearchResultSet extends SearchResultSet {
             //read the keyword string
             $data = array();
             $id = 0;
-            $string = wfMsgGetKey('simple-search-list', true, false, false);
+            $string = wfMsgGetKey($T_MSG, true, false, false);
 
             foreach (preg_split("/(\r?\n)/", $string) as $line) {
 
@@ -229,6 +231,11 @@ class CppSearchResultSet extends SearchResultSet {
 
     static function new_from_query( $query, $limit = 20, $offset = 0 )
     {
+        return self::new_from_query_group($query);
+    }
+
+    static function new_from_query_group( $query, $group = 'cpp' )
+    {
         //check the cache for optimized keyword list
         global $wgCppSearchQueryWordLimit;
         global $wgCppSearchMaxResultCost;
@@ -237,8 +244,15 @@ class CppSearchResultSet extends SearchResultSet {
         global $wgCppSearchInsertCost;
         global $wgCppSearchDeleteCost;
         global $wgCppSearchReplaceCost;
+        global $wgCppSearchGroups;
 
-        $data = self::get_data();
+        //bail out if group is not within list of approved groups
+        if (in_array($group, $wgCppSearchGroups) == false) {
+            $result_set = new CppSearchResultSet($query, array());
+            return $result_set;
+        }
+
+        $data = self::get_data($group);
 
         //split the query into words
         $qwords = array();
