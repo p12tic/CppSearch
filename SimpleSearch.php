@@ -391,11 +391,11 @@ class SimpleSearchResultSet extends SearchResultSet {
         asort($eid_map);
 
         // Strip extra results
-        $eid_map = array_slice($eid_map, 0, $wgSimpleSearchMaxResults, true);
+        $eid_map = array_slice($eid_map, 0, $wgSimpleSearchMaxResults*3, true);
 
         // Pull additional information
         $res = array();
-        foreach($eid_map as $eid => $cost) {
+        foreach ($eid_map as $eid => $cost) {
             $res[] = array(
                 'COST' => $cost,
                 'ID' => $eid,
@@ -415,6 +415,22 @@ class SimpleSearchResultSet extends SearchResultSet {
         }
 
         usort($res, 'cmp_res');
+
+        // Remove all results that contain previous result. This fixes the
+        // problem of showing all member and related functions even when they
+        // have not been searched for
+        for ($i = 0; $i < count($res); $i++) {
+            for ($i2 = $i + 1; $i2 < count($res); $i2++) {
+                if (strpos($res[$i2]['KEY'], $res[$i]['KEY']) !== false) {
+                    unset($res[$i2]);
+                    $res = array_values($res);
+                    $i2--;
+                }
+            }
+        }
+
+        // Strip extra results
+        $res = array_slice($res, 0, $wgSimpleSearchMaxResults);
 
         $result_set = new SimpleSearchResultSet($query, $res);
         return $result_set;
