@@ -232,6 +232,12 @@ class CppSearchResultSet extends SearchResultSet {
 
         $data = self::get_data($group);
 
+        //bail out if there's no data
+        if (!isset($data['WORDS']) || (count($data['WORDS']) == 0)) {
+            $result_set = new CppSearchResultSet($query, array());
+            return $result_set;
+        }
+
         //split the query into words
         $qwords = array();
         self::split_words($query, $qwords, $dummy);
