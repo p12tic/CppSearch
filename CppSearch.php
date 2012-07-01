@@ -42,4 +42,4 @@ $wgAutoloadClasses['CppSearchResult'] = $dir . 'CppSearchEngine.php';
 $wgAutoloadClasses['CppSearchResultSet'] = $dir . 'CppSearchEngine.php';
 $wgAutoloadClasses['CppSpecialSearch'] = $dir . 'CppSpecialSearch.php';
 
-$wgSpecialPages['SpecialSearch'] = 'CppSearch'; # Let MediaWiki know about your new special page.
+$wgSpecialPages['SpecialSearch'] = 'CppSearch';
