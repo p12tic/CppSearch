@@ -16,30 +16,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-$wgExtensionCredits['other'][] = array(
-    'path'           => __FILE__,
-    'name'           => 'CppSearch',
-    'author'         => 'p12',
-    'descriptionmsg' => 'C/C++ keyword search extension',
-//  'url'            => '',
-);
-
-
-$wgAutoloadClasses['CppSearchEngine'] = __FILE__;
-$wgAutoloadClasses['CppSearchResult'] = __FILE__;
-$wgAutoloadClasses['CppSearchResultSet'] = __FILE__;
-
-//Default settings
-$wgCppSearchMaxResults = 100;
-$wgCppSearchMaxResultCost = 4;
-$wgCppSearchSplitWordCost = 2;
-$wgCppSearchInsertCost = 3;
-$wgCppSearchDeleteCost = 3;
-$wgCppSearchReplaceCost = 2;
-$wgCppSearchQueryWordLimit = 5;
-$wgCppSearchCacheExpiry = 7200;
-$wgCppSearchGroups = array ( 'cpp' );
-
 class CppSearchEngine extends SearchEngine {
 
     function searchText( $term )
