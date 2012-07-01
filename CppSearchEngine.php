@@ -160,34 +160,40 @@ class CppSearchResultSet extends SearchResultSet {
                 $words = explode('=>', $line);
                 $words = array_map('trim', $words);
 
+                if (count ($words) != 2) {
+                    continue;
+                }
+
                 $key = $words[0];
                 $url = $words[1];
 
-                if (isset($key) && isset($url) && $key != '' && $url != '') {
-                    //set the data
-                    $data['KEYS'][$id] = $key;
-                    $data['URLS'][$id] = $url;
-
-                    //split the keywords
-
-                    $key_words = array();
-                    $split_words = array();
-
-                    self::split_words($key, $key_words, $split_words);
-
-                    //Map all resulting words to the source entries
-                    foreach ($key_words as $w) {
-                        if ($w == '') continue;
-                        $data['WORDS'][$w][] = $id;
-                    }
-                    //Map all resulting split words to the source entries
-                    foreach ($split_words as $w) {
-                        if ($w == '') continue;
-                        $data['WORDS_SPLIT'][$w][] = $id;
-                    }
-
-                    $id++;
+                if (!isset($key) || !isset($url) || $key == '' || $url == '') {
+                    continue;
                 }
+
+                //set the data
+                $data['KEYS'][$id] = $key;
+                $data['URLS'][$id] = $url;
+
+                //split the keywords
+
+                $key_words = array();
+                $split_words = array();
+
+                self::split_words($key, $key_words, $split_words);
+
+                //Map all resulting words to the source entries
+                foreach ($key_words as $w) {
+                    if ($w == '') continue;
+                    $data['WORDS'][$w][] = $id;
+                }
+                //Map all resulting split words to the source entries
+                foreach ($split_words as $w) {
+                    if ($w == '') continue;
+                    $data['WORDS_SPLIT'][$w][] = $id;
+                }
+
+                $id++;
             }
             $data['NUM_ID'] = $id;
 
