@@ -25,8 +25,8 @@ $wgExtensionCredits['other'][] = array(
 );
 
 
-$wgAutoloadClasses['CppSearch'] = __FILE__;
-$wgAutoloadClasses['CppResult'] = __FILE__;
+$wgAutoloadClasses['CppSearchEngine'] = __FILE__;
+$wgAutoloadClasses['CppSearchResult'] = __FILE__;
 $wgAutoloadClasses['CppSearchResultSet'] = __FILE__;
 
 //Default settings
@@ -40,7 +40,7 @@ $wgCppSearchQueryWordLimit = 5;
 $wgCppSearchCacheExpiry = 7200;
 $wgCppSearchGroups = array ( 'cpp' );
 
-class CppSearch extends SearchEngine {
+class CppSearchEngine extends SearchEngine {
 
     function searchText( $term )
     {
