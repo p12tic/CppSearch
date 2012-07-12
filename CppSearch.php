@@ -53,6 +53,13 @@ $wgCppSearchCacheExpiry = 7200;
 
 $wgCppSearchGroups = array ( 'cpp' );
 
+// offer external search engines to the user
+$wgCppSearchExternalEngines = array(
+    'Google' => 'https://www.google.com/search?q=$1+site:en.cppreference.com',
+    'Bing' => 'http://www.bing.com/search?q=$1+site:en.cppreference.com',
+    'DuckDuckGo' => 'https://duckduckgo.com/html/?q=$1+site:en.cppreference.com'
+    );
+
 $dir = dirname(__FILE__) . '/';
 
 $wgAutoloadClasses['CppSearchEngine'] = $dir . 'CppSearchEngine.php';

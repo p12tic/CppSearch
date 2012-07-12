@@ -107,34 +107,12 @@ class CppSpecialSearch extends SpecialPage {
      */
     public function show_results($term) {
         global $wgOut, $wgDisableTextSearch, $wgContLang, $wgScript;
+        global $wgCppSearchExternalEngines;
         wfProfileIn( __METHOD__ );
 
         $search = $this->get_search_engine();
 
         $this->setup_page($term);
-
-        /*if( $wgDisableTextSearch ) {
-            global $wgSearchForwardUrl;
-            if( $wgSearchForwardUrl ) {
-                $url = str_replace( '$1', urlencode( $term ), $wgSearchForwardUrl );
-                $wgOut->redirect( $url );
-                wfProfileOut( __METHOD__ );
-                return;
-            }
-            $wgOut->addHTML(
-                Xml::openElement( 'fieldset' ) .
-                Xml::element( 'legend', null, wfMsg( 'search-external' ) ) .
-                Xml::element( 'p', array( 'class' => 'mw-searchdisabled' ), wfMsg( 'searchdisabled' ) ) .
-                wfMsg( 'googlesearch',
-                    htmlspecialchars( $term ),
-                    htmlspecialchars( 'UTF-8' ),
-                    htmlspecialchars( wfMsg( 'searchbutton' ) )
-                ) .
-                Xml::closeElement( 'fieldset' )
-            );
-            wfProfileOut( __METHOD__ );
-            return;
-        }*/
 
         // fetch search results
         $matches = $search->searchText($term);
@@ -165,7 +143,7 @@ class CppSpecialSearch extends SpecialPage {
         $wgOut->addHtml( "<div class='searchresults'>" );
         $wgOut->parserOptions()->setEditSection( false );
 
-        if( $matches ) {
+        if ($matches) {
             // show results, if any
             $num_matches = $matches ? $matches->numRows() : 0;
             if ($num_matches > 0) {
@@ -177,6 +155,20 @@ class CppSpecialSearch extends SpecialPage {
         }
         
         $wgOut->addHtml( "</div>" );
+
+        if ($wgCppSearchExternalEngines) {
+            $wgOut->addHtml("<div class='externalsearch'>");
+
+            $text = 'You can also use external search engines for the query: ';
+            foreach ($wgCppSearchExternalEngines as $name => $url) {
+                $url = str_replace( '$1', urlencode( $term ), $url );
+                $text = $text . '<a href="' . $url . '">' . $name . '</a>, ';
+            }
+            $text = substr($text, 0, -2);
+            
+            $wgOut->addHtml($text);
+            $wgOut->addHtml("</div>");
+        }
 
         wfProfileOut( __METHOD__ );
     }
@@ -272,10 +264,10 @@ class CppSpecialSearch extends SpecialPage {
         // If the page doesn't *exist*... our search index is out of date.
         // The least confusing at this point is to drop the result.
         // You may get less results, but... oh well. :P
-        if( $result->isMissingRevision() ) {
+        /*if( $result->isMissingRevision() ) {
             wfProfileOut( __METHOD__ );
             return "<!-- missing page " . htmlspecialchars( $t->getPrefixedText() ) . "-->\n";
-        }
+        }*/
 
         wfProfileOut( __METHOD__ );
         return "<li><div class='mw-search-result-heading'>{$link}</div>\n</li>\n";
