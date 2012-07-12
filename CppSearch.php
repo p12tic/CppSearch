@@ -25,14 +25,32 @@ $wgExtensionCredits['other'][] = array(
 );
 
 //Default settings
+
+// maximum number of results to return
 $wgCppSearchMaxResults = 100;
+
+// if a result doesn't match identically, return it only if its 'cost' is not
+// higher than this value
 $wgCppSearchMaxResultCost = 4;
+
+// the '_' is also considered a word separator. This value specified the cost
+// added to the results acquired this way. E.g. 'unordered_set', when the query
+// asks only for 'set'
 $wgCppSearchSplitWordCost = 2;
+
+// inexact match. Cost of each inserted symbol
 $wgCppSearchInsertCost = 3;
+// inexact match. Cost of each deleted symbol
 $wgCppSearchDeleteCost = 3;
+// inexact match. Cost of each replaced symbol
 $wgCppSearchReplaceCost = 2;
+
+// limit the numbor of words in the query to this value
 $wgCppSearchQueryWordLimit = 5;
+
+// the search files are loaded cached this number of seconds
 $wgCppSearchCacheExpiry = 7200;
+
 $wgCppSearchGroups = array ( 'cpp' );
 
 $dir = dirname(__FILE__) . '/';
