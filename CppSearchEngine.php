@@ -482,7 +482,7 @@ class CppSearchResult extends SearchResult {
 
     function getTitleSnippet($terms)
     {
-        if(is_null($this->mHighlightTitle)) return '';
+        if (is_null($this->mHighlightTitle)) return '';
         return $this->mHighlightTitle;
     }
 

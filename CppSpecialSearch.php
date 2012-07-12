@@ -23,9 +23,12 @@
  */
 class CppSpecialSearch extends SpecialPage {
 
+    /// Search engine
+    protected $searchEngine;
+
     public function __construct()
     {
-        parent::__construct( 'CppSearch' );
+        parent::__construct( 'Search' );
     }
 
     /**
@@ -46,33 +49,15 @@ class CppSpecialSearch extends SpecialPage {
         $titleParam = str_replace( '_', ' ', $par );
 
         // Fetch the search term
-        $search = str_replace( "\n", " ", $wgRequest->getText( 'search', $titleParam ) );
-
-        $this->load( $wgRequest, $wgUser );
-
-        if ( $wgRequest->getVal( 'fulltext' )
-            || !is_null( $wgRequest->getVal( 'offset' ) )
-            || !is_null( $wgRequest->getVal( 'searchx' ) ) )
-        {
-            $this->showResults( $search );
-        } else {
-            $this->goResult( $search );
-        }
-    }
-
-    /**
-     * Set up basic search parameters from the request and user settings.
-     * Typically you'll pass $wgRequest and $wgUser.
-     *
-     * @param $request WebRequest
-     * @param $user User
-     */
-    public function load( &$request, &$user ) {
-        list( $this->limit, $this->offset ) = $request->getLimitOffset( 20, 'searchlimit' );
-        $this->mPrefix = $request->getVal( 'prefix', '' );
+        $term = str_replace("\n", " ", $wgRequest->getText('search', $titleParam));
 
         $this->sk = $this->getSkin();
-        $this->fulltext = $request->getVal('fulltext');
+
+        $this->show_results($term);
+        /*
+        } else {
+            $this->goResult( $search );
+        }*/
     }
 
     /**
@@ -82,12 +67,12 @@ class CppSpecialSearch extends SpecialPage {
      */
     public function goResult( $term ) {
         global $wgOut;
-        $this->setupPage( $term );
+        $this->setup_page( $term );
         # Try to go to page as entered.
         $t = Title::newFromText( $term );
         # If the string cannot be used to create a title
         if( is_null( $t ) ) {
-            return $this->showResults( $term );
+            return $this->show_results( $term );
         }
         # If there's an exact or very near match, jump right there.
         $t = SearchEngine::getNearMatch( $term );
@@ -114,23 +99,19 @@ class CppSpecialSearch extends SpecialPage {
                 return;
             }
         }
-        return $this->showResults( $term );
+        return $this->show_results( $term );
     }
 
     /**
      * @param $term String
      */
-    public function showResults( $term ) {
+    public function show_results($term) {
         global $wgOut, $wgDisableTextSearch, $wgContLang, $wgScript;
         wfProfileIn( __METHOD__ );
 
-        $sk = $this->getSkin();
+        $search = $this->get_search_engine();
 
-        $search = $this->getSearchEngine();
-        $search->prefix = $this->mPrefix;
-        $term = $search->transformSearchTerm($term);
-
-        $this->setupPage( $term );
+        $this->setup_page($term);
 
         /*if( $wgDisableTextSearch ) {
             global $wgSearchForwardUrl;
@@ -155,20 +136,15 @@ class CppSpecialSearch extends SpecialPage {
             return;
         }*/
 
-        $t = Title::newFromText( $term );
-
         // fetch search results
-        $rewritten = $search->replacePrefixes($term);
-
-        $textMatches = $search->searchText( $rewritten );
-
+        $matches = $search->searchText($term);
 
         // start rendering the page
         $wgOut->addHtml(
             Xml::openElement(
                 'form',
                 array(
-                    'id' => ( $this->profile === 'advanced' ? 'powersearch' : 'search' ),
+                    'id' => 'search',
                     'method' => 'get',
                     'action' => $wgScript
                 )
@@ -178,44 +154,28 @@ class CppSpecialSearch extends SpecialPage {
             Xml::openElement( 'table', array( 'id'=>'mw-search-top-table', 'border'=>0, 'cellpadding'=>0, 'cellspacing'=>0 ) ) .
             Xml::openElement( 'tr' ) .
             Xml::openElement( 'td' ) . "\n" .
-            $this->shortDialog( $term ) .
+            $this->show_dialog( $term ) .
             Xml::closeElement('td') .
             Xml::closeElement('tr') .
             Xml::closeElement('table')
         );
 
-        $filePrefix = $wgContLang->getFormattedNsText(NS_FILE).':';
-        if( trim( $term ) === '' || $filePrefix === trim( $term ) ) {
-            $wgOut->addHTML( $this->formHeader( $term, 0, 0 ) );
-            $wgOut->addHTML( '</form>' );
-            // Empty query -- straight view of search form
-            wfProfileOut( __METHOD__ );
-            return;
-        }
-
         // Get number of results
-        $textMatchesNum = $textMatches ? $textMatches->numRows() : 0;
 
-        // show number of results and current offset
-        $wgOut->addHTML( $this->formHeader( $term, $textMatchesNum, $textMatchesNum ) );
-
-        $wgOut->addHtml( Xml::closeElement( 'form' ) );
         $wgOut->addHtml( "<div class='searchresults'>" );
-
         $wgOut->parserOptions()->setEditSection( false );
 
-        if( $textMatches ) {
-
-            // show results
-            if( $numTextMatches > 0 ) {
-                $wgOut->addHTML( $this->showMatches( $textMatches ) );
+        if( $matches ) {
+            // show results, if any
+            $num_matches = $matches ? $matches->numRows() : 0;
+            if ($num_matches > 0) {
+                $wgOut->addHTML($this->show_matches($matches));
+            } else {
+                $wgOut->wrapWikiMsg( "<p class=\"mw-search-nonefound\">\n$1</p>", array( 'search-nonefound', wfEscapeWikiText( $term ) ) );
             }
-
-            $textMatches->free();
+            $matches->free();
         }
-        if( $numTextMatches === 0 ) {
-            $wgOut->wrapWikiMsg( "<p class=\"mw-search-nonefound\">\n$1</p>", array( 'search-nonefound', wfEscapeWikiText( $term ) ) );
-        }
+        
         $wgOut->addHtml( "</div>" );
 
         wfProfileOut( __METHOD__ );
@@ -224,15 +184,27 @@ class CppSpecialSearch extends SpecialPage {
     /**
      *
      */
-    protected function setupPage( $term ) {
+    protected function setup_page($term)
+    {
         global $wgOut;
 
         if( strval( $term ) !== ''  ) {
             $wgOut->setPageTitle( wfMsg( 'searchresults') );
             $wgOut->setHTMLTitle( wfMsg( 'pagetitle', wfMsg( 'searchresults-title', $term ) ) );
         }
-        // add javascript specific to special:search
-        $wgOut->addModules( 'mediawiki.special.search' );
+    }
+
+    protected function show_dialog($term)
+    {
+        $out = Html::hidden( 'title', $this->getTitle()->getPrefixedText() );
+        // Term box
+        $out .= Html::input( 'search', $term, 'search', array(
+            'id' => 'searchText',
+            'size' => '50',
+            'autofocus'
+        ) ) . "\n";
+        $out .= Xml::submitButton( wfMsg( 'searchbutton' ) ) . "\n";
+        return $out;
     }
 
     /**
@@ -240,7 +212,7 @@ class CppSpecialSearch extends SpecialPage {
      *
      * @param $matches SearchResultSet
      */
-    protected function showMatches( &$matches ) {
+    protected function show_matches( &$matches ) {
         global $wgContLang;
         wfProfileIn( __METHOD__ );
 
@@ -253,7 +225,7 @@ class CppSpecialSearch extends SpecialPage {
         }
         $out .= "<ul class='mw-search-results'>\n";
         while( $result = $matches->next() ) {
-            $out .= $this->showHit( $result, $terms );
+            $out .= $this->show_hit( $result, $terms );
         }
         $out .= "</ul>\n";
 
@@ -269,29 +241,25 @@ class CppSpecialSearch extends SpecialPage {
      * @param $result SearchResult
      * @param $terms Array: terms to highlight
      */
-    protected function showHit( $result, $terms ) {
+    protected function show_hit($result, $terms) {
         global $wgLang;
         wfProfileIn( __METHOD__ );
 
-        if( $result->isBrokenTitle() ) {
+        if ($result->isBrokenTitle()) {
             wfProfileOut( __METHOD__ );
             return "<!-- Broken link in search result -->\n";
         }
 
-        $sk = $this->getSkin();
         $t = $result->getTitle();
 
-        $titleSnippet = $result->getTitleSnippet($terms);
+        $title_snippet = $result->getTitleSnippet($terms);
 
-        if( $titleSnippet == '' )
-            $titleSnippet = null;
-
+        if ($title_snippet == '') {
+            $title_snippet = null;
+        }
+        
         $link_t = clone $t;
-
-        wfRunHooks( 'ShowSearchHitTitle',
-                    array( &$link_t, &$titleSnippet, $result, $terms, $this ) );
-
-        $link = $this->sk->linkKnown($link_t, $titleSnippet);
+        $link = $this->sk->linkKnown($link_t, $title_snippet);
 
         //If page content is not readable, just return the title.
         //This is not quite safe, but better than showing excerpts from non-readable pages
@@ -311,40 +279,13 @@ class CppSpecialSearch extends SpecialPage {
 
         wfProfileOut( __METHOD__ );
         return "<li><div class='mw-search-result-heading'>{$link}</div>\n</li>\n";
-
     }
 
-    protected function shortDialog( $term ) {
-        $out = Html::hidden( 'title', $this->getTitle()->getPrefixedText() );
-        // Term box
-        $out .= Html::input( 'search', $term, 'search', array(
-            'id' => $this->profile === 'advanced' ? 'powerSearchText' : 'searchText',
-            'size' => '50',
-            'autofocus'
-        ) ) . "\n";
-        $out .= Html::hidden( 'fulltext', 'Search' ) . "\n";
-        $out .= Xml::submitButton( wfMsg( 'searchbutton' ) ) . "\n";
-        return $out;
-    }
-
-    /**
-     * @since 1.18
-     */
-    public function getSearchEngine() {
+    public function get_search_engine() {
         if ( $this->searchEngine === null ) {
-            $this->searchEngine = CppSearch::create();
+            $this->searchEngine = CppSearchEngine::create();
         }
         return $this->searchEngine;
-    }
-
-    /**
-     * Users of hook SpecialSearchSetupEngine can use this to
-     * add more params to links to not lose selection when
-     * user navigates search results.
-     * @since 1.18
-     */
-    public function setExtraParam( $key, $value ) {
-        $this->extraParams[$key] = $value;
     }
 
 }
