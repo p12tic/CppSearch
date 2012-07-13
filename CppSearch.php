@@ -68,3 +68,5 @@ $wgAutoloadClasses['CppSearchResultSet'] = $dir . 'CppSearchEngine.php';
 $wgAutoloadClasses['CppSpecialSearch'] = $dir . 'CppSpecialSearch.php';
 
 $wgSpecialPages['Search'] = 'CppSpecialSearch';
+
+$wgExtensionMessagesFiles['CppSearch'] = $dir . 'CppSearch.i18n.php';

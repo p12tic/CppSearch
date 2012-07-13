@@ -137,7 +137,7 @@ class CppSpecialSearch extends SpecialPage {
 
         // Get number of results
 
- // fetch search results
+        // fetch search results
 
         $wgOut->addHtml( "<div class='searchresults'>" );
         $wgOut->parserOptions()->setEditSection( false );
@@ -180,14 +180,14 @@ class CppSpecialSearch extends SpecialPage {
         if ($wgCppSearchExternalEngines) {
             $wgOut->addHtml("<div class='externalsearch'>");
 
-            $text = 'You can also use external search engines for the query: ';
+            $engines = '';
             foreach ($wgCppSearchExternalEngines as $name => $url) {
                 $url = str_replace( '$1', urlencode( $term ), $url );
-                $text = $text . '<a href="' . $url . '">' . $name . '</a>, ';
+                $engines = $engines . '<a href="' . $url . '">' . $name . '</a>, ';
             }
-            $text = substr($text, 0, -2);
+            $engines = substr($engines, 0, -2);
             
-            $wgOut->addHtml($text);
+            $wgOut->addHtml(wfMsg('cppsearch_externalengines', $engines));
             $wgOut->addHtml("</div>");
         }
 
