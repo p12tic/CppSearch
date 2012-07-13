@@ -107,15 +107,12 @@ class CppSpecialSearch extends SpecialPage {
      */
     public function show_results($term) {
         global $wgOut, $wgDisableTextSearch, $wgContLang, $wgScript;
-        global $wgCppSearchExternalEngines;
+        global $wgCppSearchExternalEngines, $wgCppSearchGroups;
         wfProfileIn( __METHOD__ );
 
         $search = $this->get_search_engine();
 
         $this->setup_page($term);
-
-        // fetch search results
-        $matches = $search->searchText($term);
 
         // start rendering the page
         $wgOut->addHtml(
@@ -140,18 +137,42 @@ class CppSpecialSearch extends SpecialPage {
 
         // Get number of results
 
+ // fetch search results
+
         $wgOut->addHtml( "<div class='searchresults'>" );
         $wgOut->parserOptions()->setEditSection( false );
 
-        if ($matches) {
-            // show results, if any
-            $num_matches = $matches ? $matches->numRows() : 0;
-            if ($num_matches > 0) {
-                $wgOut->addHTML($this->show_matches($matches));
-            } else {
-                $wgOut->wrapWikiMsg( "<p class=\"mw-search-nonefound\">\n$1</p>", array( 'search-nonefound', wfEscapeWikiText( $term ) ) );
+        $matches_html = array();
+        
+        foreach($wgCppSearchGroups as $group) {
+            //run a separate search for each group
+            $matches = $search->search_text_group($term, $group);
+            
+            if (!$matches) {
+                continue;
+            }
+
+            // store results, if any
+            if ($matches->numRows() > 0) {
+                $matches_html[$group] = $this->show_matches($matches);
             }
             $matches->free();
+        }
+
+        if (empty($matches_html)) {
+            // nothing found
+            $wgOut->wrapWikiMsg( "<p class=\"mw-search-nonefound\">\n$1</p>", array( 'search-nonefound', wfEscapeWikiText( $term ) ) );
+        } else {
+            //show results from different groups
+            $wgOut->addHtml("<table class='multisearch'><tr>");
+            foreach ($matches_html as $group => $html) {
+                $wgOut->addHtml("<th>" . $group . "</th>");
+            }
+            $wgOut->addHtml("</tr><tr>");
+            foreach ($matches_html as $group => $html) {
+                $wgOut->addHtml("<td>" . $html . "</td>");
+            }
+            $wgOut->addHtml("</tr></table>");
         }
         
         $wgOut->addHtml( "</div>" );

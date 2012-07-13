@@ -18,11 +18,16 @@
 
 class CppSearchEngine extends SearchEngine {
 
-    function searchText( $term )
+    function searchText($term, $limit = 0, $offset = 0)
     {
-        return CppSearchResultSet::new_from_query($term, $this->limit, $this->offset);
+        return CppSearchResultSet::new_from_query($term);
     }
 
+    function search_text_group($term, $group)
+    {
+        return CppSearchResultSet::new_from_query_group($term, $group);
+    }
+    
     //Title search not supported
     function searchTitle( $term )
     {
@@ -207,7 +212,7 @@ class CppSearchResultSet extends SearchResultSet {
         return $data;
     }
 
-    static function new_from_query( $query, $limit = 20, $offset = 0 )
+    static function new_from_query( $query )
     {
         return self::new_from_query_group($query);
     }
