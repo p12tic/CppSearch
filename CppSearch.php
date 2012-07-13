@@ -36,6 +36,12 @@ $wgSpecialPages['Search'] = 'CppSpecialSearch';
 
 $wgExtensionMessagesFiles['CppSearch'] = $dir . 'CppSearch.i18n.php';
 
+$wgResourceModules['ext.CppSearch'] = array(
+    'styles' => 'CppSearch.css',
+    'localBasePath' => dirname(__FILE__),
+    'remoteExtPath' => 'CppSearch'
+);
+
 //Default settings
 
 // maximum number of results to return

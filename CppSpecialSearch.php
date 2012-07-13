@@ -205,7 +205,7 @@ class CppSpecialSearch extends SpecialPage {
             $wgOut->setPageTitle( wfMsg( 'searchresults') );
             $wgOut->setHTMLTitle( wfMsg( 'pagetitle', wfMsg( 'searchresults-title', $term ) ) );
         }
-        $wgOut->addExtensionStyle("{$wgExtensionAssetsPath}/CppSearch/CppSearch.css");
+        $wgOut->addModules('ext.CppSearch');
     }
 
     protected function show_dialog($term)
