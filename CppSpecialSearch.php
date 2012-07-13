@@ -164,7 +164,7 @@ class CppSpecialSearch extends SpecialPage {
             $wgOut->wrapWikiMsg( "<p class=\"mw-search-nonefound\">\n$1</p>", array( 'search-nonefound', wfEscapeWikiText( $term ) ) );
         } else {
             //show results from different groups
-            $wgOut->addHtml("<table class='multisearch'><tr>");
+            $wgOut->addHtml("<table class='mw-cppsearch-groups'><tr>");
             foreach ($matches_html as $group => $html) {
                 $wgOut->addHtml("<th>" . $group . "</th>");
             }
@@ -178,7 +178,7 @@ class CppSpecialSearch extends SpecialPage {
         $wgOut->addHtml( "</div>" );
 
         if ($wgCppSearchExternalEngines) {
-            $wgOut->addHtml("<div class='externalsearch'>");
+            $wgOut->addHtml("<div class='mw-cppsearch-external'>");
 
             $engines = '';
             foreach ($wgCppSearchExternalEngines as $name => $url) {
@@ -199,12 +199,13 @@ class CppSpecialSearch extends SpecialPage {
      */
     protected function setup_page($term)
     {
-        global $wgOut;
+        global $wgOut, $wgExtensionAssetsPath;
 
         if( strval( $term ) !== ''  ) {
             $wgOut->setPageTitle( wfMsg( 'searchresults') );
             $wgOut->setHTMLTitle( wfMsg( 'pagetitle', wfMsg( 'searchresults-title', $term ) ) );
         }
+        $wgOut->addExtensionStyle("{$wgExtensionAssetsPath}/CppSearch/CppSearch.css");
     }
 
     protected function show_dialog($term)
