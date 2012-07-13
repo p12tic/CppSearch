@@ -285,10 +285,10 @@ class CppSpecialSearch extends SpecialPage {
         // If the page doesn't *exist*... our search index is out of date.
         // The least confusing at this point is to drop the result.
         // You may get less results, but... oh well. :P
-        /*if( $result->isMissingRevision() ) {
+        if( $result->isMissingRevision() ) {
             wfProfileOut( __METHOD__ );
             return "<!-- missing page " . htmlspecialchars( $t->getPrefixedText() ) . "-->\n";
-        }*/
+        }
 
         wfProfileOut( __METHOD__ );
         return "<li><div class='mw-search-result-heading'>{$link}</div>\n</li>\n";
