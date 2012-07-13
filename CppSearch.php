@@ -24,6 +24,18 @@ $wgExtensionCredits['other'][] = array(
 //  'url'            => '',
 );
 
+
+$dir = dirname(__FILE__) . '/';
+
+$wgAutoloadClasses['CppSearchEngine'] = $dir . 'CppSearchEngine.php';
+$wgAutoloadClasses['CppSearchResult'] = $dir . 'CppSearchEngine.php';
+$wgAutoloadClasses['CppSearchResultSet'] = $dir . 'CppSearchEngine.php';
+$wgAutoloadClasses['CppSpecialSearch'] = $dir . 'CppSpecialSearch.php';
+
+$wgSpecialPages['Search'] = 'CppSpecialSearch';
+
+$wgExtensionMessagesFiles['CppSearch'] = $dir . 'CppSearch.i18n.php';
+
 //Default settings
 
 // maximum number of results to return
@@ -59,14 +71,3 @@ $wgCppSearchExternalEngines = array(
     'Bing' => 'http://www.bing.com/search?q=$1+site:en.cppreference.com',
     'DuckDuckGo' => 'https://duckduckgo.com/html/?q=$1+site:en.cppreference.com'
     );
-
-$dir = dirname(__FILE__) . '/';
-
-$wgAutoloadClasses['CppSearchEngine'] = $dir . 'CppSearchEngine.php';
-$wgAutoloadClasses['CppSearchResult'] = $dir . 'CppSearchEngine.php';
-$wgAutoloadClasses['CppSearchResultSet'] = $dir . 'CppSearchEngine.php';
-$wgAutoloadClasses['CppSpecialSearch'] = $dir . 'CppSpecialSearch.php';
-
-$wgSpecialPages['Search'] = 'CppSpecialSearch';
-
-$wgExtensionMessagesFiles['CppSearch'] = $dir . 'CppSearch.i18n.php';
