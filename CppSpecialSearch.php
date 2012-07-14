@@ -305,15 +305,6 @@ class CppSpecialSearch extends SpecialPage {
         $link_t = clone $t;
         $link = $this->sk->linkKnown($link_t, $title_snippet);
 
-        //If page content is not readable, just return the title.
-        //This is not quite safe, but better than showing excerpts from non-readable pages
-        //Note that hiding the entry entirely would screw up paging.
-        if( !$t->userCanRead() ) {
-            wfProfileOut( __METHOD__ );
-            $html = "<li>{$link}</li>\n";
-            return;
-        }
-
         // If the page doesn't *exist*... our search index is out of date.
         // The least confusing at this point is to drop the result.
         // You may get less results, but... oh well. :P
