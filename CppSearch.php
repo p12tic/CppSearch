@@ -44,34 +44,43 @@ $wgResourceModules['ext.CppSearch'] = array(
 
 //Default settings
 
-// maximum number of results to return
+// Maximum number of results to return
 $wgCppSearchMaxResults = 100;
 
-// if a result doesn't match identically, return it only if its 'cost' is not
+// If a result doesn't match identically, return it only if its 'cost' is not
 // higher than this value
 $wgCppSearchMaxResultCost = 4;
 
-// the '_' is also considered a word separator. This value specified the cost
+// The '_' is also considered a word separator. This value specified the cost
 // added to the results acquired this way. E.g. 'unordered_set', when the query
 // asks only for 'set'
 $wgCppSearchSplitWordCost = 2;
 
-// inexact match. Cost of each inserted symbol
+// Inexact match. Cost of each inserted symbol
 $wgCppSearchInsertCost = 3;
-// inexact match. Cost of each deleted symbol
+// Inexact match. Cost of each deleted symbol
 $wgCppSearchDeleteCost = 3;
-// inexact match. Cost of each replaced symbol
+// Inexact match. Cost of each replaced symbol
 $wgCppSearchReplaceCost = 2;
 
-// limit the numbor of words in the query to this value
+// Limit the numbor of words in the query to this value
 $wgCppSearchQueryWordLimit = 5;
 
-// the search files are loaded cached this number of seconds
+// The search files are loaded cached this number of seconds
 $wgCppSearchCacheExpiry = 7200;
 
+// The engine can analyze several several search indexes. This setting defines
+// the locations of the indexes and their human readable names. The value of the
+// setting should be an associative array. Each key-value pair defines one
+// index. The index is fetched from MediaWiki:cpp-search-list-$1 where $1 is the
+// key. The value defines human-readable name of the index
 $wgCppSearchGroups = array('cpp' => 'C++', 'c' => 'C');
 
-// offer external search engines to the user
+// Offer external search engines to the user. The value of this setting should
+// be an associative array. The keys define names of the search engine that will
+// be shown in the search results, the values specify the search url. The search
+// url should contain '$1' which defines where to insert the search query.
+// If this array is empty, no external search engines are offered.
 $wgCppSearchExternalEngines = array(
     'Google' => 'https://www.google.com/search?q=$1+site:en.cppreference.com',
     'Bing' => 'http://www.bing.com/search?q=$1+site:en.cppreference.com',
