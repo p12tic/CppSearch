@@ -192,10 +192,9 @@ class CppSpecialSearch extends SpecialPage {
             $wgOut->addHtml("</tr></table>");
         }
 
-        $wgOut->addHtml( "</div>" );
-
+        // show external search engines
         if ($wgCppSearchExternalEngines) {
-            $wgOut->addHtml("<div class='mw-cppsearch-external'>");
+            $wgOut->addHtml("<p class='mw-cppsearch-external'>");
 
             $engines = '';
             foreach ($wgCppSearchExternalEngines as $name => $url) {
@@ -205,8 +204,10 @@ class CppSpecialSearch extends SpecialPage {
             $engines = substr($engines, 0, -2);
 
             $wgOut->addHtml(wfMsg('cppsearch_externalengines', $engines));
-            $wgOut->addHtml("</div>");
+            $wgOut->addHtml("</p>");
         }
+
+        $wgOut->addHtml( "</div>" );
 
         wfProfileOut( __METHOD__ );
     }
