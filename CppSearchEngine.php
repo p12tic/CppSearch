@@ -326,7 +326,7 @@ class CppSearchResultSet extends SearchResultSet {
 
         // sort the match array to start from the words with the lowest number
         // of entries
-        function cmp_match($lhs, $rhs)
+        $cmp_match = function($lhs, $rhs)
         {
             $lnum = 0;
             foreach($lhs as $w) {
@@ -339,9 +339,9 @@ class CppSearchResultSet extends SearchResultSet {
             }
 
             return $lnum - $rnum;
-        }
+        };
 
-        uasort($matches, 'cmp_match');
+        uasort($matches, $cmp_match);
 
         //  Find a set of entry ids that have matches for all qwords
         // eid = array [ {id of entry} => cost ]
@@ -409,15 +409,15 @@ class CppSearchResultSet extends SearchResultSet {
 
         // Sort the best results within each cost bucket
         // Prefer results with lower cost and shorter key
-        function cmp_res($lhs, $rhs)
+        $cmp_res = function($lhs, $rhs)
         {
             $res = $lhs['COST'] - $rhs['COST'];
             if ($res != 0) return $res;
 
             return strlen($lhs['KEY']) - strlen($rhs['KEY']);
-        }
+        };
 
-        usort($res, 'cmp_res');
+        usort($res, $cmp_res);
 
         // Remove all results that contain previous result. This fixes the
         // problem of showing all member and related functions even when they
