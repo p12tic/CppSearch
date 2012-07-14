@@ -143,18 +143,24 @@ class CppSpecialSearch extends SpecialPage {
         $wgOut->parserOptions()->setEditSection( false );
 
         $matches_html = array();
-        
-        foreach($wgCppSearchGroups as $group) {
+
+        foreach($wgCppSearchGroups as $group => $group_name) {
             //run a separate search for each group
             $matches = $search->search_text_group($term, $group);
-            
+
             if (!$matches) {
                 continue;
             }
 
             // store results, if any
-            if ($matches->numRows() > 0) {
-                $matches_html[$group] = $this->show_matches($matches);
+            $num_matches = $matches->numRows();
+            if ($num_matches > 0) {
+                $matches_html[] = array(
+                    'GROUP' => $group,
+                    'NUM' => $num_matches,
+                    'NAME' => $group_name,
+                    'HTML' => $this->show_matches($matches)
+                );
             }
             $matches->free();
         }
@@ -165,16 +171,16 @@ class CppSpecialSearch extends SpecialPage {
         } else {
             //show results from different groups
             $wgOut->addHtml("<table class='mw-cppsearch-groups'><tr>");
-            foreach ($matches_html as $group => $html) {
-                $wgOut->addHtml("<th>" . $group . "</th>");
+            foreach ($matches_html as $m) {
+                $wgOut->addHtml("<th>" . $m['NAME'] . "</th>");
             }
             $wgOut->addHtml("</tr><tr>");
-            foreach ($matches_html as $group => $html) {
-                $wgOut->addHtml("<td>" . $html . "</td>");
+            foreach ($matches_html as $m) {
+                $wgOut->addHtml("<td>" . $m['HTML'] . "</td>");
             }
             $wgOut->addHtml("</tr></table>");
         }
-        
+
         $wgOut->addHtml( "</div>" );
 
         if ($wgCppSearchExternalEngines) {
@@ -186,7 +192,7 @@ class CppSpecialSearch extends SpecialPage {
                 $engines = $engines . '<a href="' . $url . '">' . $name . '</a>, ';
             }
             $engines = substr($engines, 0, -2);
-            
+
             $wgOut->addHtml(wfMsg('cppsearch_externalengines', $engines));
             $wgOut->addHtml("</div>");
         }
@@ -271,7 +277,7 @@ class CppSpecialSearch extends SpecialPage {
         if ($title_snippet == '') {
             $title_snippet = null;
         }
-        
+
         $link_t = clone $t;
         $link = $this->sk->linkKnown($link_t, $title_snippet);
 

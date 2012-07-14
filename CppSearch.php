@@ -69,7 +69,7 @@ $wgCppSearchQueryWordLimit = 5;
 // the search files are loaded cached this number of seconds
 $wgCppSearchCacheExpiry = 7200;
 
-$wgCppSearchGroups = array('cpp', 'c');
+$wgCppSearchGroups = array('cpp' => 'C++', 'c' => 'C');
 
 // offer external search engines to the user
 $wgCppSearchExternalEngines = array(

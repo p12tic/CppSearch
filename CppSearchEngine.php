@@ -230,7 +230,7 @@ class CppSearchResultSet extends SearchResultSet {
         global $wgCppSearchGroups;
 
         //bail out if group is not within list of approved groups
-        if (in_array($group, $wgCppSearchGroups) == false) {
+        if (array_key_exists($group, $wgCppSearchGroups) == false) {
             $result_set = new CppSearchResultSet($query, array());
             return $result_set;
         }
