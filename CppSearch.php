@@ -69,6 +69,9 @@ $wgCppSearchQueryWordLimit = 5;
 // The search files are loaded cached this number of seconds
 $wgCppSearchCacheExpiry = 7200;
 
+// Whether to directly redirect in case only one viable search result exists
+$wgCppSearchDoRedirect = true;
+
 // The engine can analyze several several search indexes. This setting defines
 // the locations of the indexes and their human readable names. The value of the
 // setting should be an associative array. Each key-value pair defines one

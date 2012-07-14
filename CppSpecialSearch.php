@@ -106,46 +106,24 @@ class CppSpecialSearch extends SpecialPage {
      * @param $term String
      */
     public function show_results($term) {
-        global $wgOut, $wgDisableTextSearch, $wgContLang, $wgScript;
-        global $wgCppSearchExternalEngines, $wgCppSearchGroups;
+        global $wgOut, $wgDisableTextSearch, $wgContLang, $wgScript,
+               $wgCppSearchExternalEngines, $wgCppSearchGroups,
+               $wgCppSearchDoRedirect;
+
         wfProfileIn( __METHOD__ );
 
         $search = $this->get_search_engine();
 
         $this->setup_page($term);
 
-        // start rendering the page
-        $wgOut->addHtml(
-            Xml::openElement(
-                'form',
-                array(
-                    'id' => 'search',
-                    'method' => 'get',
-                    'action' => $wgScript
-                )
-            )
-        );
-        $wgOut->addHtml(
-            Xml::openElement( 'table', array( 'id'=>'mw-search-top-table', 'border'=>0, 'cellpadding'=>0, 'cellspacing'=>0 ) ) .
-            Xml::openElement( 'tr' ) .
-            Xml::openElement( 'td' ) . "\n" .
-            $this->show_dialog( $term ) .
-            Xml::closeElement('td') .
-            Xml::closeElement('tr') .
-            Xml::closeElement('table')
-        );
-
-        // Get number of results
-
-        // fetch search results
-
+        // fetch the search results
         $wgOut->addHtml( "<div class='searchresults'>" );
         $wgOut->parserOptions()->setEditSection( false );
 
         $matches_html = array();
 
         foreach($wgCppSearchGroups as $group => $group_name) {
-            //run a separate search for each group
+            // run a separate search for each group
             $matches = $search->search_text_group($term, $group);
 
             if (!$matches) {
@@ -155,11 +133,13 @@ class CppSpecialSearch extends SpecialPage {
             // store results, if any
             $num_matches = $matches->numRows();
             if ($num_matches > 0) {
+                $this->show_matches($matches, $curr_html, $curr_url);
                 $matches_html[] = array(
                     'GROUP' => $group,
                     'NUM' => $num_matches,
                     'NAME' => htmlspecialchars($group_name),
-                    'HTML' => $this->show_matches($matches)
+                    'HTML' => $curr_html,
+                    'URL' => $curr_url
                 );
             }
             $matches->free();
@@ -169,7 +149,38 @@ class CppSpecialSearch extends SpecialPage {
             // nothing found
             $wgOut->wrapWikiMsg( "<p class=\"mw-search-nonefound\">\n$1</p>", array( 'search-nonefound', wfEscapeWikiText( $term ) ) );
         } else {
-            //show results from different groups
+            // check whether to redirect
+            if ($wgCppSearchDoRedirect && count($matches_html) == 1) {
+                $m = reset($matches_html);
+                if ($m['NUM'] == 1 && $m['URL'] != null) {
+                    $wgOut->redirect($m['URL']);
+                    wfProfileOut( __METHOD__ );
+                    return;
+                }
+            }
+
+            // show the search dialog
+            $wgOut->addHtml(
+                Xml::openElement(
+                    'form',
+                    array(
+                        'id' => 'search',
+                        'method' => 'get',
+                        'action' => $wgScript
+                    )
+                )
+            );
+            $wgOut->addHtml(
+                Xml::openElement( 'table', array( 'id'=>'mw-search-top-table', 'border'=>0, 'cellpadding'=>0, 'cellspacing'=>0 ) ) .
+                Xml::openElement( 'tr' ) .
+                Xml::openElement( 'td' ) . "\n" .
+                $this->show_dialog( $term ) .
+                Xml::closeElement('td') .
+                Xml::closeElement('tr') .
+                Xml::closeElement('table')
+            );
+
+            // show results from different groups
             $wgOut->addHtml("<table class='mw-cppsearch-groups'><tr>");
             foreach ($matches_html as $m) {
                 $wgOut->addHtml("<th>" . $m['NAME'] . "</th>");
@@ -231,28 +242,35 @@ class CppSpecialSearch extends SpecialPage {
      * Show whole set of results
      *
      * @param $matches SearchResultSet
+     * @param $html Output variable where the resulting html is stored
+     * @param $url Output variable where the url to one of the result pages is
+     *             stored. If there are no result pages, null is stored there
      */
-    protected function show_matches( &$matches ) {
+    protected function show_matches(&$matches, &$html, &$url) {
         global $wgContLang;
         wfProfileIn( __METHOD__ );
 
         $terms = $wgContLang->convertForSearchResult( $matches->termMatches() );
 
-        $out = "";
+        $url = null;
+        $html = "";
         $infoLine = $matches->getInfo();
         if( !is_null($infoLine) ) {
-            $out .= "\n<!-- {$infoLine} -->\n";
+            $html .= "\n<!-- {$infoLine} -->\n";
         }
-        $out .= "<ul class='mw-search-results'>\n";
+        $html .= "<ul class='mw-search-results'>\n";
         while( $result = $matches->next() ) {
-            $out .= $this->show_hit($result, $terms);
+            $this->show_hit($result, $terms, $r_html, $r_url);
+            $html .= $r_html;
+            if ($r_url !== null) {
+                $url = $r_url;
+            }
         }
-        $out .= "</ul>\n";
+        $html .= "</ul>\n";
 
         // convert the whole thing to desired language variant
-        $out = $wgContLang->convert( $out );
+        $html = $wgContLang->convert($html);
         wfProfileOut( __METHOD__ );
-        return $out;
     }
 
     /**
@@ -260,17 +278,20 @@ class CppSpecialSearch extends SpecialPage {
      *
      * @param $result SearchResult
      * @param $terms Array: terms to highlight
+     * @param $html Output variable where the resulting HTML is stored
+     * @param $url Output variable where the resulting URL (if any) is stored.
+     *             If there's no URL, the variable is set to null
      */
-    protected function show_hit($result, $terms) {
+    protected function show_hit($result, $terms, &$html, &$url) {
         global $wgLang;
         wfProfileIn( __METHOD__ );
+        $url = null;
 
         if ($result->isBrokenTitle()) {
             wfProfileOut( __METHOD__ );
-            return "<!-- Broken link in search result -->\n";
+            $htlm = "<!-- Broken link in search result -->\n";
+            return;
         }
-
-        $t = $result->getTitle();
 
         $title_snippet = $result->getTitleSnippet($terms);
 
@@ -278,14 +299,19 @@ class CppSpecialSearch extends SpecialPage {
             $title_snippet = null;
         }
 
+        $t = $result->getTitle();
+
+        $url = $t->getFullURL();
         $link_t = clone $t;
         $link = $this->sk->linkKnown($link_t, $title_snippet);
+
         //If page content is not readable, just return the title.
         //This is not quite safe, but better than showing excerpts from non-readable pages
         //Note that hiding the entry entirely would screw up paging.
         if( !$t->userCanRead() ) {
             wfProfileOut( __METHOD__ );
-            return "<li>{$link}</li>\n";
+            $html = "<li>{$link}</li>\n";
+            return;
         }
 
         // If the page doesn't *exist*... our search index is out of date.
@@ -293,11 +319,13 @@ class CppSpecialSearch extends SpecialPage {
         // You may get less results, but... oh well. :P
         if( $result->isMissingRevision() ) {
             wfProfileOut( __METHOD__ );
-            return "<!-- missing page " . htmlspecialchars($t->getPrefixedText()) . "-->\n";
+            $html = "<!-- missing page " . htmlspecialchars($t->getPrefixedText()) . "-->\n";
+            return;
         }
 
         wfProfileOut( __METHOD__ );
-        return "<li><div class='mw-search-result-heading'>{$link}</div>\n</li>\n";
+        $html = "<li><div class='mw-search-result-heading'>{$link}</div>\n</li>\n";
+        return;;
     }
 
     public function get_search_engine() {
