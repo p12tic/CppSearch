@@ -158,7 +158,7 @@ class CppSpecialSearch extends SpecialPage {
                 $matches_html[] = array(
                     'GROUP' => $group,
                     'NUM' => $num_matches,
-                    'NAME' => $group_name,
+                    'NAME' => htmlspecialchars($group_name),
                     'HTML' => $this->show_matches($matches)
                 );
             }
@@ -189,7 +189,7 @@ class CppSpecialSearch extends SpecialPage {
             $engines = '';
             foreach ($wgCppSearchExternalEngines as $name => $url) {
                 $url = str_replace( '$1', urlencode( $term ), $url );
-                $engines = $engines . '<a href="' . $url . '">' . $name . '</a>, ';
+                $engines = $engines . '<a href="' . $url . '">' . htmlspecialchars($name) . '</a>, ';
             }
             $engines = substr($engines, 0, -2);
 
@@ -245,7 +245,7 @@ class CppSpecialSearch extends SpecialPage {
         }
         $out .= "<ul class='mw-search-results'>\n";
         while( $result = $matches->next() ) {
-            $out .= $this->show_hit( $result, $terms );
+            $out .= $this->show_hit($result, $terms);
         }
         $out .= "</ul>\n";
 
@@ -280,7 +280,6 @@ class CppSpecialSearch extends SpecialPage {
 
         $link_t = clone $t;
         $link = $this->sk->linkKnown($link_t, $title_snippet);
-
         //If page content is not readable, just return the title.
         //This is not quite safe, but better than showing excerpts from non-readable pages
         //Note that hiding the entry entirely would screw up paging.
@@ -294,7 +293,7 @@ class CppSpecialSearch extends SpecialPage {
         // You may get less results, but... oh well. :P
         if( $result->isMissingRevision() ) {
             wfProfileOut( __METHOD__ );
-            return "<!-- missing page " . htmlspecialchars( $t->getPrefixedText() ) . "-->\n";
+            return "<!-- missing page " . htmlspecialchars($t->getPrefixedText()) . "-->\n";
         }
 
         wfProfileOut( __METHOD__ );

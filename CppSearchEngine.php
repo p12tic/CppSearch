@@ -27,7 +27,7 @@ class CppSearchEngine extends SearchEngine {
     {
         return CppSearchResultSet::new_from_query_group($term, $group);
     }
-    
+
     //Title search not supported
     function searchTitle( $term )
     {
@@ -488,7 +488,7 @@ class CppSearchResult extends SearchResult {
     function getTitleSnippet($terms)
     {
         if (is_null($this->mHighlightTitle)) return '';
-        return $this->mHighlightTitle;
+        return htmlspecialchars($this->mHighlightTitle);
     }
 
     function getScore()
