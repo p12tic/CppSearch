@@ -84,6 +84,7 @@ class CppSearchResultSet extends SearchResultSet {
             //remove spaces
             $oper = preg_replace('/ */','',$oper[0]);
             $words[] = $oper;
+            $words[] = 'operator';
             $query = preg_replace($operator_pattern, ' ', $query);
         }
 
