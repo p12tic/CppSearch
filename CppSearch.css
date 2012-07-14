@@ -2,10 +2,30 @@
  * CSS for Special:CppSearch
  */
 
-p.mw-cppsearch-external {
-
+table.mw-cppsearch-groups {
+    padding: 0.5em 0;
+    margin: 1em 0em;
+    background-color: #FAFAFA;
+    border: 1px solid silver;
+    border-radius: 5px;
+    table-layout: fixed;
+    width: 100%;
 }
 
-table.mw-cppsearch-groups {
-    width: 100%;
+.mw-cppsearch-groups th,
+.mw-cppsearch-groups td {
+    vertical-align: top;
+    padding: 0.2em 1em 0.2em 1em;
+    border-left: 1px solid silver;
+}
+
+.mw-cppsearch-groups th {
+    padding-left: 3em;
+    font-size: 1.4em;
+    text-align: left;
+}
+
+.mw-cppsearch-groups th:first-child,
+.mw-cppsearch-groups td:first-child {
+    border-left: none;
 }
