@@ -415,7 +415,10 @@ class CppSearchResultSet extends SearchResultSet {
             $res = $lhs['COST'] - $rhs['COST'];
             if ($res != 0) return $res;
 
-            return strlen($lhs['KEY']) - strlen($rhs['KEY']);
+            $res = strlen($lhs['KEY']) - strlen($rhs['KEY']);
+            if ($res != 0) return $res;
+
+            return strcmp($lhs['KEY'], $rhs['KEY']);
         };
 
         usort($res, $cmp_res);
