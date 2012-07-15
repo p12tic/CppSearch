@@ -276,9 +276,7 @@ class CppSearchResultSet extends SearchResultSet {
         self::split_words($query, $qwords, $dummy);
 
         //limit the number of words
-        while (count($qwords) > $wgCppSearchQueryWordLimit) {
-            array_pop($qwords);
-        }
+        $qwords = array_slice($qwords, 0, $wgCppSearchQueryWordLimit);
 
         // short circuit if the query is empty
         if (count($qwords) == 0) {
