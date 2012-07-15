@@ -62,6 +62,33 @@ class CppSearchEngine extends SearchEngine {
     }
 }
 
+// helper functions
+function _cmp_match($lhs, $rhs)
+{
+    $lnum = 0;
+    foreach($lhs as $w) {
+        $lnum = max($lnum, count($w['IDS']));
+    }
+
+    $rnum = 0;
+    foreach($rhs as $w) {
+        $rnum = max($rnum, count($w['IDS']));
+    }
+
+    return $lnum - $rnum;
+}
+
+function _cmp_res($lhs, $rhs)
+{
+    $res = $lhs['COST'] - $rhs['COST'];
+    if ($res != 0) return $res;
+
+    $res = strlen($lhs['KEY']) - strlen($rhs['KEY']);
+    if ($res != 0) return $res;
+
+    return strcmp($lhs['KEY'], $rhs['KEY']);
+}
+
 /**
  * @ingroup Search
  */
@@ -327,22 +354,7 @@ class CppSearchResultSet extends SearchResultSet {
 
         // sort the match array to start from the words with the lowest number
         // of entries
-        $cmp_match = function($lhs, $rhs)
-        {
-            $lnum = 0;
-            foreach($lhs as $w) {
-                $lnum = max($lnum, count($w['IDS']));
-            }
-
-            $rnum = 0;
-            foreach($rhs as $w) {
-                $rnum = max($rnum, count($w['IDS']));
-            }
-
-            return $lnum - $rnum;
-        };
-
-        uasort($matches, $cmp_match);
+        uasort($matches, '_cmp_match');
 
         //  Find a set of entry ids that have matches for all qwords
         // eid = array [ {id of entry} => cost ]
@@ -410,18 +422,7 @@ class CppSearchResultSet extends SearchResultSet {
 
         // Sort the best results within each cost bucket
         // Prefer results with lower cost and shorter key
-        $cmp_res = function($lhs, $rhs)
-        {
-            $res = $lhs['COST'] - $rhs['COST'];
-            if ($res != 0) return $res;
-
-            $res = strlen($lhs['KEY']) - strlen($rhs['KEY']);
-            if ($res != 0) return $res;
-
-            return strcmp($lhs['KEY'], $rhs['KEY']);
-        };
-
-        usort($res, $cmp_res);
+        usort($res, '_cmp_res');
 
         // Remove all results that contain previous result. This fixes the
         // problem of showing all member and related functions even when they
