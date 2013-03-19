@@ -1,0 +1,9 @@
+  Information
+  ===========
+  
+This is a custom MediaWiki search engine used at cppreference.com. The engine is
+very simple - it doesn't analyze the content of the wiki at all. Instead, it 
+fetches the search keyword list from one or more special files in MediaWiki: 
+namespace and only matches search queries to the entries in that list. This is
+suitable for cases where the search keyword set is very limited, which is the
+case when identifiers of a C/C++ library are searched for. 
