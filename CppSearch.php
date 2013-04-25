@@ -20,7 +20,7 @@ $wgExtensionCredits['other'][] = array(
     'path'           => __FILE__,
     'name'           => 'CppSearch',
     'author'         => 'p12',
-    'descriptionmsg' => 'C/C++ keyword search extension',
+    'descriptionmsg' => 'cppsearch_desc',
 //  'url'            => '',
 );
 
