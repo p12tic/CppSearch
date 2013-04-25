@@ -21,7 +21,7 @@ $wgExtensionCredits['other'][] = array(
     'name'           => 'CppSearch',
     'author'         => 'p12',
     'descriptionmsg' => 'cppsearch_desc',
-//  'url'            => '',
+    'url'            => 'https://github.com/p12tic/CppSearch',
 );
 
 
