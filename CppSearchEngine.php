@@ -63,31 +63,101 @@ class CppSearchEngine extends SearchEngine {
 }
 
 // helper functions
+// $lhs, $rhs are of type CppSearchMatchedWord
 function _cmp_match($lhs, $rhs)
 {
     $lnum = 0;
     foreach($lhs as $w) {
-        $lnum = max($lnum, count($w['IDS']));
+        $lnum = max($lnum, count($w->ids));
     }
 
     $rnum = 0;
     foreach($rhs as $w) {
-        $rnum = max($rnum, count($w['IDS']));
+        $rnum = max($rnum, count($w->ids));
     }
 
     return $lnum - $rnum;
 }
 
+// $lhs, $rhs are of type CppSearchInternalSearchResult
 function _cmp_res($lhs, $rhs)
 {
-    $res = $lhs['COST'] - $rhs['COST'];
+    $res = $lhs->cost - $rhs->cost;
     if ($res != 0) return $res;
 
-    $res = strlen($lhs['KEY']) - strlen($rhs['KEY']);
+    $res = strlen($lhs->key) - strlen($rhs->key);
     if ($res != 0) return $res;
 
-    return strcmp($lhs['KEY'], $rhs['KEY']);
+    return strcmp($lhs->key, $rhs->key);
 }
+
+/** @private
+    Represents parsed keyword info
+*/
+class CppSearchKeywordInfo {
+    // map ( id -> id_info )
+    // Maps ids to URL<->KEY pairs
+    public $id_map;
+
+    // map ( word -> array of ids )
+    // Maps words to a list of entries containing entries that match the word
+    public $words;
+
+    // map ( word -> array of ids )
+    // Maps words to a list of entries containing entries that match the
+    // word if '_' is also considered a word separator.
+    public $words_split;
+
+    // The number of entries
+    public $num_id;
+}
+
+/// @private
+class CppSearchIdInfo {
+    public $url;
+    public $full_key;
+
+    public function __construct($p_url, $p_full_key)
+    {
+        $this->url = $p_url;
+        $this->full_key = $p_full_key;
+    }
+}
+
+/** @private
+    Represents a list of queries that match a word
+*/
+class CppSearchMatchedWord {
+    public $word; // matched word
+    public $cost; // cost
+    public $ids;  // reference to an array of ids of entries containing
+                    // this word
+
+    public function __construct($p_word, $p_cost, &$p_ids)
+    {
+        $this->word = $p_word;
+        $this->cost = $p_cost;
+        $this->ids = $p_ids;
+    }
+}
+
+/** @private
+    Represents an internal search result
+*/
+class CppSearchInternalSearchResult {
+    public $cost;
+    public $id;
+    public $key;
+    public $url;
+
+    public function __construct($p_cost, $p_id, $p_key, $p_url)
+    {
+        $this->cost = $p_cost;
+        $this->id = $p_id;
+        $this->key = $p_key;
+        $this->url = $p_url;
+    }
+};
 
 /**
  * @ingroup Search
@@ -134,31 +204,7 @@ class CppSearchResultSet extends SearchResultSet {
         }
     }
 
-    /**
-        Returns parsed keyword data.
-
-        The format of parsed data:
-
-        'URLS' : map ( id -> url )
-
-            Maps the id of each entry to URL representing that entry
-
-        'KEYS' : map ( id -> full key )
-
-            Maps the id of each entry to full key name representing that entry
-
-        'WORDS' : map ( word -> array of ids )
-
-            Maps words to a list of entries containing entries that match the word
-
-        'WORDS_SPLIT' : map ( word -> array of ids )
-
-            Maps words to a list of entries containing entries that match the
-            word if '_' is also considered a word separator.
-
-        'NUM_ID' : int
-
-            The number of entries
+    /** Returns parsed keyword data.
     */
     static function get_data($group)
     {
@@ -184,7 +230,7 @@ class CppSearchResultSet extends SearchResultSet {
             $cache->delete($T_TIME);
 
             //read the keyword string
-            $data = array();
+            $data = new CppSearchKeywordInfo();
             $id = 0;
             $string = wfMsgGetKey($T_MSG, true, false, false);
 
@@ -205,11 +251,9 @@ class CppSearchResultSet extends SearchResultSet {
                 }
 
                 //set the data
-                $data['KEYS'][$id] = $key;
-                $data['URLS'][$id] = $url;
+                $data->id_map[$id] = new CppSearchIdInfo($url, $key);
 
                 //split the keywords
-
                 $key_words = array();
                 $split_words = array();
 
@@ -218,17 +262,17 @@ class CppSearchResultSet extends SearchResultSet {
                 //Map all resulting words to the source entries
                 foreach ($key_words as $w) {
                     if ($w == '') continue;
-                    $data['WORDS'][$w][] = $id;
+                    $data->words[$w][] = $id;
                 }
                 //Map all resulting split words to the source entries
                 foreach ($split_words as $w) {
                     if ($w == '') continue;
-                    $data['WORDS_SPLIT'][$w][] = $id;
+                    $data->words_split[$w][] = $id;
                 }
 
                 $id++;
             }
-            $data['NUM_ID'] = $id;
+            $data->num_id = $id;
 
             //update cache
             global $wgCppSearchCacheExpiry;
@@ -266,7 +310,7 @@ class CppSearchResultSet extends SearchResultSet {
         $data = self::get_data($group);
 
         //bail out if there's no data
-        if (!isset($data['WORDS']) || (count($data['WORDS']) == 0)) {
+        if (count($data->words) == 0) {
             $result_set = new CppSearchResultSet($query, array());
             return $result_set;
         }
@@ -289,15 +333,10 @@ class CppSearchResultSet extends SearchResultSet {
             array
 
             array [
-                {qword} => array [
-                    'WORD' => matched word
-                    'COST' => cost
-                    'IDS' => reference to an array of ids of entries containing
-                             this word
-                ]
+                {qword} => array [ matched_word ],
+                ...
             ]
         */
-
         $matches = array();
 
         foreach ($qwords as $qw) {
@@ -308,30 +347,22 @@ class CppSearchResultSet extends SearchResultSet {
                 continue;
             }
 
-            foreach ($data['WORDS'] as $w => &$id_array) {
+            foreach ($data->words as $w => &$id_array) {
                 $cost = levenshtein($qw, $w, $wgCppSearchInsertCost,
                                     $wgCppSearchDeleteCost,
                                     $wgCppSearchReplaceCost);
                 if ($cost <= $wgCppSearchMaxResultCost) {
-                    $mt = array();
-                    $mt['WORD'] = $w;
-                    $mt['COST'] = $cost;
-                    $mt['IDS'] = &$id_array;
-                    $matched_words[] = $mt;
+                    $matched_words[] = new CppSearchMatchedWord($w, $cost, $id_array);
                 }
             }
 
-            foreach ($data['WORDS_SPLIT'] as $w => &$id_array) {
+            foreach ($data->words_split as $w => &$id_array) {
                 $cost = levenshtein($qw, $w, $wgCppSearchInsertCost,
                                     $wgCppSearchDeleteCost,
                                     $wgCppSearchReplaceCost);
                 $cost += $wgCppSearchSplitWordCost;
                 if ($cost <= $wgCppSearchMaxResultCost) {
-                    $mt = array();
-                    $mt['WORD'] = $w;
-                    $mt['COST'] = $cost;
-                    $mt['IDS'] = &$id_array;
-                    $matched_words[] = $mt;
+                    $matched_words[] = new CppSearchMatchedWord($w, $cost, $id_array);
                 }
             }
 
@@ -367,8 +398,8 @@ class CppSearchResultSet extends SearchResultSet {
             $curr_eid_map = array();
 
             foreach ($matched_words as $mt) {
-                foreach ($mt['IDS'] as $eid) {
-                    $cost = $mt['COST'];
+                foreach ($mt->ids as $eid) {
+                    $cost = $mt->cost;
                     if (isset($curr_eid_map[$eid])) {
                         $cost = min($cost, $curr_eid_map[$eid]);
                     }
@@ -410,24 +441,21 @@ class CppSearchResultSet extends SearchResultSet {
         // Pull additional information
         $res = array();
         foreach ($eid_map as $eid => $cost) {
-            $res[] = array(
-                'COST' => $cost,
-                'ID' => $eid,
-                'KEY' => $data['KEYS'][$eid],
-                'URL' => $data['URLS'][$eid]
-                );
+            $res[] = new CppSearchInternalSearchResult($cost, $eid,
+                                                       $data->id_map[$eid]->full_key,
+                                                       $data->id_map[$eid]->url);
         }
 
         // Sort the best results within each cost bucket
         // Prefer results with lower cost and shorter key
         usort($res, '_cmp_res');
 
-        // Remove all results that contain previous result. This fixes the
+        // Remove all results that contain a previous result. This fixes the
         // problem of showing all member and related functions even when they
         // have not been searched for
         for ($i = 0; $i < count($res); $i++) {
             for ($i2 = $i + 1; $i2 < count($res); $i2++) {
-                if (strpos($res[$i2]['KEY'], $res[$i]['KEY']) !== false) {
+                if (strpos($res[$i2]->key, $res[$i]->key) !== false) {
                     unset($res[$i2]);
                     $res = array_values($res);
                     $i2--;
@@ -466,8 +494,8 @@ class CppSearchResultSet extends SearchResultSet {
     {
         if ($this->pos_ >= count($this->res_)) return false;
 
-        $key = $this->res_[$this->pos_]['KEY'];
-        $url = $this->res_[$this->pos_]['URL'];
+        $key = $this->res_[$this->pos_]->key;
+        $url = $this->res_[$this->pos_]->url;
         $this->pos_++;
         return new CppSearchResult($key, $url);
     }
